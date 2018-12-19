@@ -2,7 +2,7 @@
   <div class="myList-wrap">
     <header class="top">
       <div class="top-filter-btn" @click="changeShowFilter()">
-        <span class="top-filter-btn-name" :class="{'btn-color':showFilter}">筛选</span>
+        <span class="top-filter-btn-name">筛选</span>
         <i :class="showFilter?'triangle-up':'triangle-down'"></i>
       </div>
       <div class="top-search">
@@ -17,7 +17,7 @@
       </div>
     </header>
 
-    <div class="filter-panel" v-show="showFilter" @click="changeShowFilter">
+    <div class="filter-panel" v-show="showFilter" @click="changeShowFilter" ref="filterPanel">
       <div class="filter-wrap" @click.stop="">
         <div class="filter-tab">
           <div class="material title">
@@ -26,23 +26,29 @@
             </div>
             <div>
               <span class="title-right">全部物料</span>
-              <i class="right-icon"></i>
+              <i class="right-icon" @click="toggleMaterialUpDown(materialOptions)"></i>
+          </div>
+          </div>
+          <!--<transition name="updown">-->
+            <div class="material-options options" ref="materialOptions">
+            <span class="item" :class="{'active':isInArray(chosenMaterielList,item.materielId)}" @click="toggle(item)"
+                  v-for="(item,index) in materielList" :key="index">{{item.materiel}}</span>
             </div>
-          </div>
-          <div class="material-options options">
-            <span class="item" :class="{'active':isInArray(chosenMaterielList,item.materielId)}" @click="toggle(item)" v-for="(item,index) in materielList" :key="index">{{item.materiel}}</span>
-          </div>
+          <!--</transition>-->
+
           <div class="organization title">
             <div>
               <span class="item">采购组织</span>
             </div>
             <div>
               <span class="title-right">全部组织</span>
-              <i class="right-icon"></i>
+              <i class="right-icon" @click="toggleOrganizationUpDown(organizationOptions)"></i>
             </div>
           </div>
-          <div class="organization-options options">
-            <span class="item" :class="{'active':isInArray(chosenOrganizationList,item.organizationId)}" @click="toggle(item)" v-for="(item,index) in organizationList" :key="index">{{item.organization}}</span>
+          <div class="organization-options options" ref="organizationOptions">
+            <span class="item" :class="{'active':isInArray(chosenOrganizationList,item.organizationId)}"
+                  @click="toggle(item)" v-for="(item,index) in organizationList"
+                  :key="index">{{item.organization}}</span>
           </div>
         </div>
         <div class="btns">
@@ -124,7 +130,7 @@
     name: "myList",
     data() {
       return {
-        showLoadingImg:false,
+        showLoadingImg: false,
         page: 1,
         list: [],
         scroll: null,
@@ -135,11 +141,18 @@
         selectedResult: '',
         showResult: true,
         timer: null,
-        materielList:[],
-        chosenMaterielList:[],
-        organizationList:[],
-        chosenOrganizationList:[],
-        date:'',
+        materielList: [],
+        chosenMaterielList: [],
+        organizationList: [],
+        chosenOrganizationList: [],
+        date: '',
+        //materielWrapHeight: '0px',
+        materielWrapHeightFixed:0,
+        organizationlWrapHeightFixed:0,
+        materielElementHeight:0,
+        organizationElementHeight:0,
+        materialOptions:{},
+        organizationOptions:{}
       }
     },
     // computed:{
@@ -167,7 +180,7 @@
         })
           .then((response) => {
             this.showLoadingImg = false
-            this.page ++
+            this.page++
             this.list = response.data.data.concat(this.list);
             this.$nextTick(() => {
               if (!this.scroll) {
@@ -178,7 +191,7 @@
                   }
                 })
                 this.scroll.on('pullingUp', () => {
-                  this.loadData(this.page,10,this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResult)
+                  this.loadData(this.page, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResult)
                   this.scroll.finishPullUp()
                   //this.scroll.finishPullUp(); // 事情做完，需要调用此方法告诉 better-scroll 数据已加载，否则上拉事件只会执行一次
                 })
@@ -199,7 +212,7 @@
             console.log(error);
           });
       },
-      getMateriel(){
+      getMateriel() {
         axios.get('http://rap2api.taobao.org/app/mock/121282/getMateriel')
           .then((response) => {
             this.materielList = response.data.data;
@@ -208,7 +221,7 @@
             console.log(error);
           });
       },
-      getOrganization(){
+      getOrganization() {
         axios.get('http://rap2api.taobao.org/app/mock/121282/getOrganization')
           .then((response) => {
             this.organizationList = response.data.data;
@@ -217,24 +230,22 @@
             console.log(error);
           });
       },
-      toggle(item){
-        if(item.active){
-          Vue.set(item,'active',false);//为item添加不存在的属性，需要使用vue提供的Vue.set( object, key, value )方法。
-          if(item.materiel){
-            this.$remove(this.chosenMaterielList,item.materielId)
-          }else if(item.organization){
-            this.$remove(this.chosenOrganizationList,item.organizationId)
+      toggle(item) {
+        if (item.active) {
+          Vue.set(item, 'active', false);//为item添加不存在的属性，需要使用vue提供的Vue.set( object, key, value )方法。
+          if (item.materiel) {
+            this.$remove(this.chosenMaterielList, item.materielId)
+          } else if (item.organization) {
+            this.$remove(this.chosenOrganizationList, item.organizationId)
           }
-        }else{
-          Vue.set(item,'active',true);
-          if(item.materiel){
+        } else {
+          Vue.set(item, 'active', true);
+          if (item.materiel) {
             this.chosenMaterielList.push(item.materielId)
-          }else if(item.organization){
+          } else if (item.organization) {
             this.chosenOrganizationList.push(item.organizationId)
           }
         }
-        console.log(this.chosenMaterielList)
-        console.log(this.chosenOrganizationList)
         // if (item.materiel) {
         //   this.chosenMaterielList.push(item.materiel)
         // }else{
@@ -242,7 +253,7 @@
         // }
 
       },
-      doSearch(){
+      doSearch() {
         this.list.length = 0
         this.loadData(1, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResult)
         // this.chosenMaterielList
@@ -252,11 +263,11 @@
       controlLength(str, len) {
         return str.length > 6 ? str.slice(0, len) + '...' : str
       },
-      isInArray(arr,value){
-        for(var i = 0; i < arr.length; i++){
+      isInArray(arr, value) {
+        for (let i = 0; i < arr.length; i++) {
           // console.log('arr:'+arr[i])
           // console.log('value:'+value)
-          if(value === arr[i]){
+          if (value === arr[i]) {
             console.log('InArray-----------------')
             return true;
           }
@@ -318,21 +329,110 @@
         this.hiddenSearch()
         this.searchResult = []
       },
-      getDate(e){
+      getDate(e) {
         this.date = e.target.value
         this.loadData(1, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResult)
       },
+      toggleMaterialUpDown(dom) {
+        let wrap = dom
+
+        let lineNum = wrap.style.height.slice(0, wrap.style.height.length - 2) / this.materielElementHeight
+
+        if (lineNum > 1) {
+
+          wrap.style.height = this.materielElementHeight + 'px';
+          wrap.style.overflow = 'hidden';
+
+        } else {
+
+          wrap.style.height = this.materielWrapHeightFixed + 'px';
+
+        }
+      },
+      toggleOrganizationUpDown(dom) {
+        let wrap = dom
+
+        let lineNum = wrap.style.height.slice(0, wrap.style.height.length - 2) / this.organizationElementHeight
+
+        if (lineNum > 1) {
+
+          wrap.style.height = this.organizationElementHeight + 'px';
+          wrap.style.overflow = 'hidden';
+
+        } else {
+
+          wrap.style.height = this.organizationWrapHeightFixed + 'px';
+
+        }
+      },
+      getMaterialHeight(dom){
+        //获取容器dom
+        let wrap = dom
+        let wrapRect = wrap.getBoundingClientRect()
+        //容器高度
+        let wrapHeight = wrapRect.height
+
+        //容器的padding-top
+        let paddingTopHeight = window.getComputedStyle(wrap).paddingTop.slice(0, window.getComputedStyle(wrap).paddingTop.length - 2)
+
+        //容器的content高度
+        let contentHeight = wrapHeight - paddingTopHeight
+
+        //这个高度是容器内元素全部加载时容器的最大高度，要记录下来用于高度的恢复
+        //this.materielWrapHeightFixed = contentHeight
+        this.materielWrapHeightFixed = contentHeight
+
+        //获取子元素dom
+        let element = dom.children[0]
+        let elementRect = element.getBoundingClientRect()
+
+        //子元素margin-bottom
+        let marginBottomHeight = window.getComputedStyle(element).marginBottom.slice(0, window.getComputedStyle(element).marginBottom.length - 2)
+
+        //子元素的真实高度
+        //this.elementHeight = elementRect.height + parseInt(marginBottomHeight)
+        this.materielElementHeight = elementRect.height + parseInt(marginBottomHeight)
+
+        //获取一行标签的高度 赋值给父容器的作为实时高度，因为父容器要使用这个高度初始化，让用户最开始只能看到一行数据
+        wrap.style.height = this.materielElementHeight + 'px';
+        wrap.style.overflow = 'hidden';
+      },
+      getOrganizationHeight(dom){
+        //获取容器dom
+        let wrap = dom
+        let wrapRect = wrap.getBoundingClientRect()
+
+        //容器高度
+        let wrapHeight = wrapRect.height
+
+        //容器的padding-top
+        let paddingTopHeight = window.getComputedStyle(wrap).paddingTop.slice(0, window.getComputedStyle(wrap).paddingTop.length - 2)
+
+        //容器的content高度
+        let contentHeight = wrapHeight - paddingTopHeight
+
+        //这个高度是容器内元素全部加载时容器的最大高度，要记录下来用于高度的恢复
+        //this.materielWrapHeightFixed = contentHeight
+        this.organizationWrapHeightFixed = contentHeight
+
+        //获取子元素dom
+        let element = dom.children[0]
+
+        let elementRect = element.getBoundingClientRect()
+
+        //子元素margin-bottom
+        let marginBottomHeight = window.getComputedStyle(element).marginBottom.slice(0, window.getComputedStyle(element).marginBottom.length - 2)
+
+        //子元素的真实高度
+        //this.elementHeight = elementRect.height + parseInt(marginBottomHeight)
+        this.organizationElementHeight = elementRect.height + parseInt(marginBottomHeight)
+
+        //获取一行标签的高度 赋值给父容器的作为实时高度，因为父容器要使用这个高度初始化，让用户最开始只能看到一行数据
+        wrap.style.height = this.organizationElementHeight + 'px';
+        wrap.style.overflow = 'hidden';
+      }
     },
     mounted() {
-      // console.log('listmounted')
-      // console.log(this.$refs.wrapper)
-      // console.log(this.scroll)
-      //this.loadData(1, 10, [], [], '', [])
-      // this.chosenMaterielList = JSON.parse(localStorage.getItem('materiel')) || []
-      // this.chosenOrganizationList = JSON.parse(localStorage.getItem('organization')) || []
-      // this.date = localStorage.getItem('date') || ''
-      // this.selectedResult = localStorage.getItem('search') || ''
-      // this.loadData(1, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResult)
       this.getMateriel()
       this.getOrganization()
       let date = new Date();
@@ -356,6 +456,45 @@
 
       })
     },
+    watch: {
+      //数据只会在mounted中改变一次，所以这里监听的是数据初始化
+      materielList: function () {
+        //我们要获取的页面上元素的高度，但这个元素所在的父容器是v-show:false状态，所以这里要使用一个非常规方法
+        //将这个父容器在页面上渲染出来，紧接着让它不可见，这个时候就可以获取到数据并切用户还看不到，后面获取完数据后会把它改回成初始状态
+        this.showFilter = true
+        this.$refs.filterPanel.style.visibility = 'hidden'
+
+        //必须在this.$nextTick中才能获取到数据，
+        this.$nextTick(() => {
+          //html中要用到这个dom
+          this.materialOptions = this.$refs.materialOptions
+
+          //获取元素的真实高度
+          this.getMaterialHeight(this.$refs.materialOptions)
+
+          // 将该组件改回初始状态
+          this.showFilter = false
+          this.$refs.filterPanel.style.visibility = 'visible'
+        })
+      },
+      organizationList(){
+        this.showFilter = true
+        this.$refs.filterPanel.style.visibility = 'hidden'
+
+        //必须在this.$nextTick中才能获取到数据，
+        this.$nextTick(() => {
+          //html中要用到这个dom
+          this.organizationOptions = this.$refs.organizationOptions
+          //获取元素的真实高度
+          this.getOrganizationHeight(this.$refs.organizationOptions)
+          //this.getHeight(this.$refs.organizationOptions,this.organizationlWrapHeightFixed,this.organizationlElementHeight)
+
+          // 将该组件改回初始状态
+          this.showFilter = false
+          this.$refs.filterPanel.style.visibility = 'visible'
+        })
+      }
+    }
   }
 </script>
 
@@ -370,7 +509,8 @@
     align-items: center;
     /*border-bottom: 1px solid #e9e9e9;*/
   }
-  .top::after{
+
+  .top::after {
     content: "  ";
     position: absolute;
     left: 0;
@@ -380,25 +520,36 @@
     background-color: #e9e9e9;
     /* 如果不用 background-color, 使用 border-top:1px solid #e0e0e0; */
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    .top::after{ transform:scaleY(.5); }
+    .top::after {
+      transform: scaleY(.5);
+    }
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 3) {
-    .top::after { transform:scaleY(.33333); }
+    .top::after {
+      transform: scaleY(.33333);
+    }
   }
 
   .top-filter-btn {
     margin: 0.14rem 0 0.14rem 0.12rem;
     padding-right: 0.2rem;
     border-right: 1px solid #b5b5b5;
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   }
 
   @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    .top-filter-btn { border-right: 0.5px solid #b5b5b5; }
+    .top-filter-btn {
+      border-right: 0.5px solid #b5b5b5;
+    }
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 3) {
-    .top-filter-btn { border-right: 0.333333px solid #b5b5b5; }
+    .top-filter-btn {
+      border-right: 0.333333px solid #b5b5b5;
+    }
   }
 
   .top-filter-btn > .top-filter-btn-name {
@@ -438,7 +589,7 @@
 
   .top-search .input-wrap {
     flex: 1;
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   }
 
   .top-search .input-wrap span {
@@ -449,9 +600,11 @@
     font-size: 0.12rem;
     border: 0;
   }
-  .top-search-btn{
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
+
+  .top-search-btn {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   }
+
   .top-search-btn > span {
     padding-left: 0.04rem;
     font-size: 0.12rem;
@@ -473,7 +626,8 @@
     background-color: #F2F6F9;
     /*border-bottom: 1px solid #e9e9e9;*/
   }
-  .date-wrap::after{
+
+  .date-wrap::after {
     content: "  ";
     position: absolute;
     left: 0;
@@ -483,11 +637,17 @@
     background-color: #e9e9e9;
     /* 如果不用 background-color, 使用 border-top:1px solid #e0e0e0; */
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    .date-wrap::after{ transform:scaleY(.5); }
+    .date-wrap::after {
+      transform: scaleY(.5);
+    }
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 3) {
-    .date-wrap::after { transform:scaleY(.33333); }
+    .date-wrap::after {
+      transform: scaleY(.33333);
+    }
   }
 
   .date-wrap .show {
@@ -508,7 +668,7 @@
     top: 0;
     right: 0;
     opacity: 0;
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   }
 
   .date-wrap .data-plugin-wrap .date-icon {
@@ -532,7 +692,8 @@
     /*border-bottom: 1px solid #efefef;*/
     font-size: 0.1rem;
   }
-  .list-wrap li::after{
+
+  .list-wrap li::after {
     content: "  ";
     position: absolute;
     left: 0;
@@ -542,11 +703,17 @@
     background-color: #efefef;
     /* 如果不用 background-color, 使用 border-top:1px solid #e0e0e0; */
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    .list-wrap li::after{ transform:scaleY(.5); }
+    .list-wrap li::after {
+      transform: scaleY(.5);
+    }
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 3) {
-    .list-wrap li::after { transform:scaleY(.33333); }
+    .list-wrap li::after {
+      transform: scaleY(.33333);
+    }
   }
 
   .list-wrap .content li .head {
@@ -618,19 +785,22 @@
     font-size: 0.09rem;
     color: #bbbbbb;
   }
-  .list-wrap .loading-wrapper{
+
+  .list-wrap .loading-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 0.8rem;
     background-color: #F2F6F9;
   }
-  .list-wrap .loading-wrapper .line{
+
+  .list-wrap .loading-wrapper .line {
     height: 1px;
     width: 0.85rem;
     /*border-bottom: 1px solid #cacaca;*/
   }
-  .list-wrap .loading-wrapper .line::after{
+
+  .list-wrap .loading-wrapper .line::after {
     content: "  ";
     position: absolute;
     left: 0;
@@ -640,14 +810,20 @@
     background-color: #cacaca;
     /* 如果不用 background-color, 使用 border-top:1px solid #e0e0e0; */
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    .list-wrap .loading-wrapper .line::after{ transform:scaleY(.5); }
-  }
-  @media screen and (-webkit-min-device-pixel-ratio: 3) {
-    .list-wrap .loading-wrapper .line::after { transform:scaleY(.33333); }
+    .list-wrap .loading-wrapper .line::after {
+      transform: scaleY(.5);
+    }
   }
 
-  .list-wrap .loading-wrapper img{
+  @media screen and (-webkit-min-device-pixel-ratio: 3) {
+    .list-wrap .loading-wrapper .line::after {
+      transform: scaleY(.33333);
+    }
+  }
+
+  .list-wrap .loading-wrapper img {
     margin: 0 0.08rem;
     width: 0.25rem;
     height: 0.25rem;
@@ -676,7 +852,8 @@
     /*border-bottom: 1px solid #979797;*/
     position: relative;
   }
-  .filter-panel .filter-wrap .filter-tab .title::after{
+
+  .filter-panel .filter-wrap .filter-tab .title::after {
     content: "  ";
     position: absolute;
     left: 0;
@@ -686,11 +863,17 @@
     background-color: #979797;
     /* 如果不用 background-color, 使用 border-top:1px solid #e0e0e0; */
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    .filter-panel .filter-wrap .filter-tab .title::after{ transform:scaleY(.5); }
+    .filter-panel .filter-wrap .filter-tab .title::after {
+      transform: scaleY(.5);
+    }
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 3) {
-    .filter-panel .filter-wrap .filter-tab .title::after { transform:scaleY(.33333); }
+    .filter-panel .filter-wrap .filter-tab .title::after {
+      transform: scaleY(.33333);
+    }
   }
 
   .filter-panel .filter-wrap .filter-tab .title .item {
@@ -714,6 +897,7 @@
   .filter-panel .filter-wrap .filter-tab .options {
     margin-left: 0.12rem;
     padding: 0.09rem 0.12rem 0 0;
+    transition: height 0.3s;
   }
 
   .filter-panel .filter-wrap .filter-tab .options .item {
@@ -727,27 +911,34 @@
     border-radius: 0.04rem;
     border: 1px solid #fff;
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    .filter-panel .filter-wrap .filter-tab .options .item { border: 0.5px solid #fff; }
+    .filter-panel .filter-wrap .filter-tab .options .item {
+      border: 0.5px solid #fff;
+    }
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 3) {
-    .filter-panel .filter-wrap .filter-tab .options .item { border: 0.333333px solid #fff; }
+    .filter-panel .filter-wrap .filter-tab .options .item {
+      border: 0.333333px solid #fff;
+    }
   }
+
   /*.filter-panel .filter-wrap .filter-tab .options .item::after{*/
-    /*content: "  ";*/
-    /*position: absolute;*/
-    /*left: 0;*/
-    /*bottom: 0;*/
-    /*width: 100%;*/
-    /*height: 1px;*/
-    /*background-color: #fff;*/
-    /*!* 如果不用 background-color, 使用 border-top:1px solid #e0e0e0; *!*/
+  /*content: "  ";*/
+  /*position: absolute;*/
+  /*left: 0;*/
+  /*bottom: 0;*/
+  /*width: 100%;*/
+  /*height: 1px;*/
+  /*background-color: #fff;*/
+  /*!* 如果不用 background-color, 使用 border-top:1px solid #e0e0e0; *!*/
   /*}*/
   /*@media screen and (-webkit-min-device-pixel-ratio: 2) {*/
-    /*.filter-panel .filter-wrap .filter-tab .options .item::after{ transform:scaleY(.5); }*/
+  /*.filter-panel .filter-wrap .filter-tab .options .item::after{ transform:scaleY(.5); }*/
   /*}*/
   /*@media screen and (-webkit-min-device-pixel-ratio: 3) {*/
-    /*.filter-panel .filter-wrap .filter-tab .options .item::after { transform:scaleY(.333333); }*/
+  /*.filter-panel .filter-wrap .filter-tab .options .item::after { transform:scaleY(.333333); }*/
   /*}*/
 
   .filter-panel .filter-wrap .filter-tab .options .item:last-child {
@@ -761,10 +952,15 @@
   }
 
   @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    .filter-panel .filter-wrap .filter-tab .options .item.active { border: 0.5px solid #007aff; }
+    .filter-panel .filter-wrap .filter-tab .options .item.active {
+      border: 0.5px solid #007aff;
+    }
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 3) {
-    .filter-panel .filter-wrap .filter-tab .options .item.active { border: 0.333333px solid #007aff; }
+    .filter-panel .filter-wrap .filter-tab .options .item.active {
+      border: 0.333333px solid #007aff;
+    }
   }
 
   .filter-panel .filter-wrap .filter-tab .organization-options .item {
@@ -862,7 +1058,8 @@
     color: #929292;
     /*border-bottom: 1px solid #efefef;*/
   }
-  .search-wrap .result-wrap .result li::after{
+
+  .search-wrap .result-wrap .result li::after {
     content: "  ";
     position: absolute;
     left: 0;
@@ -874,14 +1071,24 @@
   }
 
   @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    .search-wrap .result-wrap .result li::after { transform:scaleY(.5); }
+    .search-wrap .result-wrap .result li::after {
+      transform: scaleY(.5);
+    }
   }
+
   @media screen and (-webkit-min-device-pixel-ratio: 3) {
-    .search-wrap .result-wrap .result li::after { transform:scaleY(.333333); }
+    .search-wrap .result-wrap .result li::after {
+      transform: scaleY(.333333);
+    }
   }
-  /*.loading-wrapper{*/
-    /*position: fixed;*/
-    /*bottom: 0;*/
-  /*}*/
+
+  .updown-enter-active, .updown-leave-active {
+    transition: opacity 1.5s;
+  }
+
+  .updown-enter, .updown-leave-to /* .fade-leave-active below version 2.1.8 */
+  {
+    opacity: 0;
+  }
 
 </style>
