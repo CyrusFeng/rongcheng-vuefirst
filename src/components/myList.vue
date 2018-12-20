@@ -18,7 +18,7 @@
     </header>
 
     <div class="filter-panel" v-show="showFilter" @click="changeShowFilter" ref="filterPanel">
-      <div class="filter-wrap" @click.stop="">
+      <div class="filter-wrap" @click.stop="" ref="filterWrap">
         <div class="filter-tab">
           <div class="material title">
             <div>
@@ -26,14 +26,14 @@
             </div>
             <div>
               <span class="title-right">全部物料</span>
-              <i class="right-icon" @click="toggleMaterialUpDown(materialOptions)"></i>
-          </div>
+              <i :class="materialExpand?'up-icon':''" @click="toggleMaterialUpDown(materialOptions)"></i>
+            </div>
           </div>
           <!--<transition name="updown">-->
-            <div class="material-options options" ref="materialOptions">
+          <div class="material-options options" ref="materialOptions">
             <span class="item" :class="{'active':isInArray(chosenMaterielList,item.materielId)}" @click="toggle(item)"
                   v-for="(item,index) in materielList" :key="index">{{item.materiel}}</span>
-            </div>
+          </div>
           <!--</transition>-->
 
           <div class="organization title">
@@ -42,7 +42,7 @@
             </div>
             <div>
               <span class="title-right">全部组织</span>
-              <i class="right-icon" @click="toggleOrganizationUpDown(organizationOptions)"></i>
+              <i :class="organizationExpand?'up-icon':''" @click="toggleOrganizationUpDown(organizationOptions)"></i>
             </div>
           </div>
           <div class="organization-options options" ref="organizationOptions">
@@ -58,12 +58,12 @@
       </div>
     </div>
 
-    <div class="search-wrap" v-show="!searchStatus" @click="changeShowSearch">
+    <div class="search-wrap" v-show="!searchStatus" @click="changeShowSearch" ref="searchWrap">
       <div class="search-bar-wrap" @click.stop="">
         <div class="search-bar">
           <i class="search-icon"></i>
           <label for="search" class="showName" v-show="!labelStatus">请输入供应商名称</label>
-          <input type="text" id="search" @input="search($event)" :value="selectedResult">
+          <input type="text" id="search" @input="search($event)" @focus="focus" @blur="blur" :value="selectedResult">
         </div>
         <span class="cancelBtn" @click="hiddenSearch">取消</span>
       </div>
@@ -75,7 +75,7 @@
     </div>
 
     <div class="date-wrap">
-      <span class="show">{{this.date}}</span>
+      <span class="show">{{this.date?this.date:initDate()}}</span>
       <div class="data-plugin-wrap">
         <input type="date" @input="getDate($event)">
         <i class="date-icon"></i>
@@ -111,7 +111,7 @@
         </ul>
         <div class="loading-wrapper">
           <p class="line"></p>
-          <img src="../assets/logo.png" alt="">
+          <img src="../assets/loading-bottom.gif" alt="">
           <p class="line"></p>
         </div>
       </div>
@@ -134,12 +134,16 @@
         page: 1,
         list: [],
         scroll: null,
+        filterScroll: null,
         showFilter: false,
+        materialExpand:false,
+        organizationExpand:false,
         labelStatus: false,
         searchStatus: true,
         searchResult: [],
         selectedResult: '',
         showResult: true,
+        viewHeight: 0,
         timer: null,
         materielList: [],
         chosenMaterielList: [],
@@ -147,12 +151,15 @@
         chosenOrganizationList: [],
         date: '',
         //materielWrapHeight: '0px',
-        materielWrapHeightFixed:0,
-        organizationlWrapHeightFixed:0,
-        materielElementHeight:0,
-        organizationElementHeight:0,
-        materialOptions:{},
-        organizationOptions:{}
+        materielWrapHeightFixed: 0,
+        organizationlWrapHeightFixed: 0,
+        materielElementHeight: 0,
+        organizationElementHeight: 0,
+        materialOptions: {},
+        organizationOptions: {},
+        materielWrapHeight: 0,
+        organizationWrapHeight: 0,
+        filterWrap: 0,
       }
     },
     // computed:{
@@ -216,6 +223,15 @@
         axios.get('http://rap2api.taobao.org/app/mock/121282/getMateriel')
           .then((response) => {
             this.materielList = response.data.data;
+            // this.$nextTick(() => {
+            //   if (!this.filterScroll) {
+            //     this.filterScroll = new BScroll(this.$refs.filterPanel, {
+            //       click: true
+            //     })
+            //   } else {
+            //     this.filterScroll.refresh()
+            //   }
+            // })
           })
           .catch(function (error) {
             console.log(error);
@@ -225,6 +241,15 @@
         axios.get('http://rap2api.taobao.org/app/mock/121282/getOrganization')
           .then((response) => {
             this.organizationList = response.data.data;
+            // this.$nextTick(() => {
+            //   if (!this.filterScroll) {
+            //     this.filterScroll = new BScroll(this.$refs.filterPanel, {
+            //       click: true
+            //     })
+            //   } else {
+            //     this.filterScroll.refresh()
+            //   }
+            // })
           })
           .catch(function (error) {
             console.log(error);
@@ -246,6 +271,7 @@
             this.chosenOrganizationList.push(item.organizationId)
           }
         }
+
         // if (item.materiel) {
         //   this.chosenMaterielList.push(item.materiel)
         // }else{
@@ -342,14 +368,20 @@
 
           wrap.style.height = this.materielElementHeight + 'px';
           wrap.style.overflow = 'hidden';
-
+          this.materialExpand = false
         } else {
 
           wrap.style.height = this.materielWrapHeightFixed + 'px';
-
+          this.materialExpand = true
         }
+        this.materielWrapHeight = wrap.style.height
+
+        // this.filterScroll.refresh()
+
+        // console.log(this.filterScroll)
       },
       toggleOrganizationUpDown(dom) {
+
         let wrap = dom
 
         let lineNum = wrap.style.height.slice(0, wrap.style.height.length - 2) / this.organizationElementHeight
@@ -358,14 +390,22 @@
 
           wrap.style.height = this.organizationElementHeight + 'px';
           wrap.style.overflow = 'hidden';
+          this.organizationExpand = false
 
         } else {
 
           wrap.style.height = this.organizationWrapHeightFixed + 'px';
+          this.organizationExpand = true
 
         }
+
+        this.organizationWrapHeight = wrap.style.height
+
+        // this.filterScroll.refresh()
+        // console.log(this.filterScroll)
+
       },
-      getMaterialHeight(dom){
+      getMaterialHeight(dom) {
         //获取容器dom
         let wrap = dom
         let wrapRect = wrap.getBoundingClientRect()
@@ -397,7 +437,7 @@
         wrap.style.height = this.materielElementHeight + 'px';
         wrap.style.overflow = 'hidden';
       },
-      getOrganizationHeight(dom){
+      getOrganizationHeight(dom) {
         //获取容器dom
         let wrap = dom
         let wrapRect = wrap.getBoundingClientRect()
@@ -430,23 +470,33 @@
         //获取一行标签的高度 赋值给父容器的作为实时高度，因为父容器要使用这个高度初始化，让用户最开始只能看到一行数据
         wrap.style.height = this.organizationElementHeight + 'px';
         wrap.style.overflow = 'hidden';
+      },
+      initDate() {
+        let date = new Date();
+        let seperator1 = "-";
+        let year = date.getFullYear();
+        let month = date.getMonth() + 1;
+        let strDate = date.getDate();
+        if (month >= 1 && month <= 9) {
+          month = "0" + month;
+        }
+        if (strDate >= 0 && strDate <= 9) {
+          strDate = "0" + strDate;
+        }
+        this.date = year + seperator1 + month + seperator1 + strDate;
+      },
+      focus() {
+        this.$refs.searchWrap.style.height = this.viewHeight
+      },
+      blur() {
+        this.$refs.searchWrap.style.height = '100%'
       }
     },
     mounted() {
       this.getMateriel()
       this.getOrganization()
-      let date = new Date();
-      let seperator1 = "-";
-      let year = date.getFullYear();
-      let month = date.getMonth() + 1;
-      let strDate = date.getDate();
-      if (month >= 1 && month <= 9) {
-        month = "0" + month;
-      }
-      if (strDate >= 0 && strDate <= 9) {
-        strDate = "0" + strDate;
-      }
-      this.date = year + seperator1 + month + seperator1 + strDate;
+      this.viewHeight = window.innerHeight
+      // this.initDate()
     },
     beforeRouteEnter(to, from, next) {
 
@@ -461,38 +511,56 @@
       materielList: function () {
         //我们要获取的页面上元素的高度，但这个元素所在的父容器是v-show:false状态，所以这里要使用一个非常规方法
         //将这个父容器在页面上渲染出来，紧接着让它不可见，这个时候就可以获取到数据并切用户还看不到，后面获取完数据后会把它改回成初始状态
-        this.showFilter = true
-        this.$refs.filterPanel.style.visibility = 'hidden'
+        console.log('change mater')
+        if (!this.showFilter) {
+          this.showFilter = true
+          this.$refs.filterPanel.style.visibility = 'hidden'
 
-        //必须在this.$nextTick中才能获取到数据，
-        this.$nextTick(() => {
-          //html中要用到这个dom
-          this.materialOptions = this.$refs.materialOptions
+          //必须在this.$nextTick中才能获取到数据，
+          this.$nextTick(() => {
+            //html中要用到这个dom
+            this.materialOptions = this.$refs.materialOptions
 
-          //获取元素的真实高度
-          this.getMaterialHeight(this.$refs.materialOptions)
+            //获取元素的真实高度
+            this.getMaterialHeight(this.$refs.materialOptions)
 
-          // 将该组件改回初始状态
-          this.showFilter = false
-          this.$refs.filterPanel.style.visibility = 'visible'
-        })
+            // 将该组件改回初始状态
+            this.showFilter = false
+            this.$refs.filterPanel.style.visibility = 'visible'
+          })
+        }
+
       },
-      organizationList(){
-        this.showFilter = true
-        this.$refs.filterPanel.style.visibility = 'hidden'
+      organizationList() {
+        if (!this.showFilter) {
+          this.showFilter = true
+          this.$refs.filterPanel.style.visibility = 'hidden'
 
-        //必须在this.$nextTick中才能获取到数据，
-        this.$nextTick(() => {
-          //html中要用到这个dom
-          this.organizationOptions = this.$refs.organizationOptions
-          //获取元素的真实高度
-          this.getOrganizationHeight(this.$refs.organizationOptions)
-          //this.getHeight(this.$refs.organizationOptions,this.organizationlWrapHeightFixed,this.organizationlElementHeight)
+          //必须在this.$nextTick中才能获取到数据，
+          this.$nextTick(() => {
+            //html中要用到这个dom
+            this.organizationOptions = this.$refs.organizationOptions
+            //获取元素的真实高度
+            this.getOrganizationHeight(this.$refs.organizationOptions)
+            //this.getHeight(this.$refs.organizationOptions,this.organizationlWrapHeightFixed,this.organizationlElementHeight)
 
-          // 将该组件改回初始状态
-          this.showFilter = false
-          this.$refs.filterPanel.style.visibility = 'visible'
-        })
+            // 将该组件改回初始状态
+            this.showFilter = false
+            this.$refs.filterPanel.style.visibility = 'visible'
+          })
+        }
+      },
+      materielWrapHeight() {
+        // this.filterScroll.refresh()
+        // this.filterWrap = this.materielWrapHeight + this.organizationWrapHeight
+        // console.log('refresh')
+      },
+      organizationWrapHeight() {
+        // this.filterScroll.refresh()
+        // this.filterWrap = this.materielWrapHeight + this.organizationWrapHeight
+      },
+      filterWrap() {
+        // this.filterScroll.refresh()
       }
     }
   }
@@ -795,9 +863,9 @@
   }
 
   .list-wrap .loading-wrapper .line {
-    height: 1px;
+    height: 0px;
     width: 0.85rem;
-    /*border-bottom: 1px solid #cacaca;*/
+    position: relative;
   }
 
   .list-wrap .loading-wrapper .line::after {
@@ -806,8 +874,9 @@
     left: 0;
     bottom: 0;
     width: 100%;
-    height: 1px;
+    height: 0px;
     background-color: #cacaca;
+    border-bottom: 1px solid #cacaca;
     /* 如果不用 background-color, 使用 border-top:1px solid #e0e0e0; */
   }
 
@@ -837,6 +906,8 @@
     left: 0;
     height: calc(100% - 0.46rem);
     background-color: rgba(0, 0, 0, 0.3);
+    overflow: scroll;
+    /*overflow: hidden;*/
   }
 
   .filter-panel .filter-wrap {
@@ -846,6 +917,7 @@
   .filter-panel .filter-wrap .filter-tab .title {
     margin-left: 0.12rem;
     padding: 0.09rem 0.12rem 0.14rem 0;
+    height: 0.2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -885,13 +957,22 @@
     padding-right: 0.03rem;
   }
 
-  .filter-panel .filter-wrap .filter-tab .title .right-icon {
+  .filter-panel .filter-wrap .filter-tab .title i {
     margin: 0 0.02rem;
     display: inline-block;
-    width: 0.06rem;
-    height: 0.1rem;
+    width: 0.12rem;
+    height: 0.2rem;
     background: url("../assets/right.png") no-repeat;
     background-size: contain;
+    transition: all 0.3s;
+  }
+  /*.filter-panel .filter-wrap .filter-tab .title i.right-icon {*/
+    /*transform: rotate(90deg);*/
+    /*transition: all 0.3s;*/
+  /*}*/
+  .filter-panel .filter-wrap .filter-tab .title i.up-icon {
+    transform: rotate(-90deg);
+    transition: all 0.3s;
   }
 
   .filter-panel .filter-wrap .filter-tab .options {
@@ -1080,15 +1161,6 @@
     .search-wrap .result-wrap .result li::after {
       transform: scaleY(.333333);
     }
-  }
-
-  .updown-enter-active, .updown-leave-active {
-    transition: opacity 1.5s;
-  }
-
-  .updown-enter, .updown-leave-to /* .fade-leave-active below version 2.1.8 */
-  {
-    opacity: 0;
   }
 
 </style>
