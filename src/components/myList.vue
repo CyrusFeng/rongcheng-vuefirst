@@ -200,16 +200,8 @@
                 this.scroll.on('pullingUp', () => {
                   this.loadData(this.page, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResult)
                   this.scroll.finishPullUp()
-                  //this.scroll.finishPullUp(); // 事情做完，需要调用此方法告诉 better-scroll 数据已加载，否则上拉事件只会执行一次
+                  // 事情做完，需要调用此方法告诉 better-scroll 数据已加载，否则上拉事件只会执行一次
                 })
-                // this.scroll.on('touchEnd', (pos) => {
-                // console.log(pos)
-                //   // 下拉动作
-                //   if (pos.y > 50) {
-                //     console.log('scorll>50')
-                //     this.loadData(this.page,10)
-                //   }
-                // })
               } else {
                 this.scroll.refresh()
               }
@@ -496,7 +488,6 @@
       this.getMateriel()
       this.getOrganization()
       this.viewHeight = window.innerHeight
-      // this.initDate()
     },
     beforeRouteEnter(to, from, next) {
 
@@ -569,6 +560,7 @@
 <style scoped>
   .myList-wrap {
     height: 100%;
+    position: relative;
   }
 
   .top {
@@ -900,17 +892,21 @@
 
   .filter-panel {
     width: 100%;
-    position: fixed;
+    position: absolute;
+    /*position: fixed;*/
     z-index: 2;
     top: 0.45rem;
     left: 0;
     height: calc(100% - 0.46rem);
     background-color: rgba(0, 0, 0, 0.3);
-    overflow: scroll;
+    /*overflow: scroll;*/
+    -webkit-overflow-scrolling:touch;
+    /*overflow-y: scroll*/
     /*overflow: hidden;*/
   }
 
   .filter-panel .filter-wrap {
+    height: calc(100% + 1px);
     background-color: #fff;
   }
 
@@ -1045,7 +1041,7 @@
   }
 
   .filter-panel .filter-wrap .filter-tab .organization-options .item {
-    padding: 0.03rem 0.35rem;
+    padding: 0.04rem 0.35rem;
   }
 
   .filter-panel .filter-wrap .btns {
