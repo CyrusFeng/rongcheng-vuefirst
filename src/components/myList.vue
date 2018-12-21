@@ -17,9 +17,9 @@
       </div>
     </header>
 
-    <div class="filter-panel" v-show="showFilter" @click="changeShowFilter" ref="filterPanel">
-      <div class="filter-wrap" @click.stop="" ref="filterWrap">
-        <div class="filter-tab">
+    <div class="filter-panel" v-show="showFilter" ref="filterPanel">
+      <div class="filter-wrap" @click.stop ref="filterWrap"  @click="changeShowFilter">
+        <div class="filter-tab" @click.stop>
           <div class="material title">
             <div>
               <span class="item">物料</span>
@@ -51,8 +51,8 @@
                   :key="index">{{item.organization}}</span>
           </div>
         </div>
-        <div class="btns">
-          <a class="reset">重置</a>
+        <div class="btns" @click.stop>
+          <a class="reset" @click="resetOptions">重置</a>
           <a class="sure" @click="doSearch(),changeShowFilter()">确定</a>
         </div>
       </div>
@@ -482,6 +482,10 @@
       },
       blur() {
         this.$refs.searchWrap.style.height = '100%'
+      },
+      resetOptions(){
+        this.chosenMaterielList = []
+        this.chosenOrganizationList = []
       }
     },
     mounted() {
