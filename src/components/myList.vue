@@ -907,6 +907,9 @@
 
   .filter-panel .filter-wrap {
     height: calc(100% + 1px);
+  }
+
+  .filter-panel .filter-wrap .filter-tab{
     background-color: #fff;
   }
 

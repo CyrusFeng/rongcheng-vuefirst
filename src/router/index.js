@@ -6,6 +6,7 @@ import myDetail from '../components/myDetail'
 Vue.use(Router)
 
 export default new Router({
+  base: '/dist/',
   routes: [
     {
       path: '/',
