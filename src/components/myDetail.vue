@@ -70,7 +70,7 @@
             <span class="title">累计收货检斤量</span>
           </div>
           <div class="right">
-            <span class="content">{{data.weight}}</span>
+            <span class="content">{{data.weight}}T</span>
           </div>
         </div>
         <div class="row">
@@ -78,7 +78,7 @@
             <span class="title">订货数量</span>
           </div>
           <div class="right">
-            <span class="content" v-show="!edit">{{data.orderQuantity}}</span>
+            <span class="content" v-show="!edit">{{data.orderQuantity}}T</span>
             <input type="text" class="weight-input" v-show="edit">
           </div>
         </div>
@@ -136,9 +136,11 @@
       next((vm) => {
         console.log('beforeRouteEnter')
         vm.id = vm.$route.params.id
+        vm.serialNum = vm.$route.params.serialNum
         axios.get('http://rap2api.taobao.org/app/mock/121282/getDetail', {
           params: {
-            id: vm.id
+            id: vm.id,
+            serialNum: vm.serialNum
           }
         })
           .then((response) => {
@@ -171,7 +173,7 @@
     methods: {
       save() {
         //this.showLoadingImg = true
-        axios.get('http://rap2api.taobao.org/app/mock/121282/update', {
+        axios.get('http://rap2api.taobao.org/app/mock/121282/updateDetail', {
           params: {
             id: this.id,
             status: this.status,
@@ -207,6 +209,7 @@
     data: function () {
       return {
         id: 0,
+        serialNum:0,
         edit: false,
         data: {},
         status: 0,

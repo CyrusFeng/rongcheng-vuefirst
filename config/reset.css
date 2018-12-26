@@ -78,3 +78,7 @@ table {
 input[type="date"]::-webkit-clear-button {
   display: none;
 }
+
+input:focus{
+  border: none;
+}

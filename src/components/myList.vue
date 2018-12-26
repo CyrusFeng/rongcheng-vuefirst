@@ -20,21 +20,21 @@
     <div class="filter-panel" v-show="showFilter" ref="filterPanel">
       <div class="filter-wrap" @click.stop ref="filterWrap"  @click="changeShowFilter">
         <div class="filter-tab" @click.stop>
-          <div class="material title">
-            <div>
-              <span class="item">物料</span>
-            </div>
-            <div>
-              <span class="title-right">全部物料</span>
-              <i :class="materialExpand?'up-icon':''" @click="toggleMaterialUpDown(materialOptions)"></i>
-            </div>
-          </div>
-          <!--<transition name="updown">-->
-          <div class="material-options options" ref="materialOptions">
-            <span class="item" :class="{'active':isInArray(chosenMaterielList,item.materielId)}" @click="toggle(item)"
-                  v-for="(item,index) in materielList" :key="index">{{item.materiel}}</span>
-          </div>
-          <!--</transition>-->
+          <!--<div class="material title">-->
+            <!--<div>-->
+              <!--<span class="item">物料</span>-->
+            <!--</div>-->
+            <!--<div>-->
+              <!--<span class="title-right">全部物料</span>-->
+              <!--<i :class="materialExpand?'up-icon':''" @click="toggleMaterialUpDown(materialOptions)"></i>-->
+            <!--</div>-->
+          <!--</div>-->
+          <!--<div class="material-options options" ref="materialOptions">-->
+            <!--<span class="item" :class="{'active':isInArray(chosenMaterielList,item.materielId)}" @click="toggle(item)"-->
+                  <!--v-for="(item,index) in materielList" :key="index">{{item.materiel}}</span>-->
+          <!--</div>-->
+
+          <MaterielSearch @listenToChildEvent="receiveChildData"></MaterielSearch>
 
           <div class="organization title">
             <div>
@@ -69,7 +69,7 @@
       </div>
       <div class="result-wrap" @click.stop="" v-show="showResult">
         <ul class="result">
-          <li v-for="item in searchResult" @click="resultToSearchBar($event)">{{item.name}}</li>
+          <li v-for="item in searchResult" @click="resultToSearchBar($event,item.supplierId)">{{item.supplierName}}</li>
         </ul>
       </div>
     </div>
@@ -103,7 +103,7 @@
                 <span class="label">{{controlLength(item.organization,8)}}</span>
               </div>
               <div class="more">
-                <router-link :to="{name: 'detail', params: {id: item.id}}">更多</router-link>
+                <router-link :to="{name: 'detail', params: {id: item.id,serialNum:item.serialNum}}">更多</router-link>
               </div>
             </div>
 
@@ -125,9 +125,14 @@
   import BScroll from 'better-scroll'
   import axios from 'axios'
 
+  import MaterielSearch from './materielSearch'
+
   let json = {}
   export default {
     name: "myList",
+    components:{
+      MaterielSearch
+    },
     data() {
       return {
         showLoadingImg: false,
@@ -142,6 +147,7 @@
         searchStatus: true,
         searchResult: [],
         selectedResult: '',
+        selectedResultId: '',
         showResult: true,
         viewHeight: 0,
         timer: null,
@@ -168,12 +174,7 @@
     //   }
     // },
     methods: {
-      loadData(page, pageAmount, materiel, organization, date, search) {
-        console.log(organization)
-        // localStorage.setItem('materiel',JSON.stringify(materiel))
-        // localStorage.setItem('organization',JSON.stringify(organization))
-        // localStorage.setItem('date',date)
-        // localStorage.setItem('search',search)
+      loadData(page, pageAmount, materiel, organization, date, supplier) {
         this.showLoadingImg = true
         axios.get('http://rap2api.taobao.org/app/mock/121282/getList', {
           params: {
@@ -182,7 +183,7 @@
             materiel: materiel,
             organization: organization,
             date: date,
-            search: search,
+            supplier: supplier,
           }
         })
           .then((response) => {
@@ -198,7 +199,7 @@
                   }
                 })
                 this.scroll.on('pullingUp', () => {
-                  this.loadData(this.page, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResult)
+                  this.loadData(this.page, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResultId)
                   this.scroll.finishPullUp()
                   // 事情做完，需要调用此方法告诉 better-scroll 数据已加载，否则上拉事件只会执行一次
                 })
@@ -211,37 +212,19 @@
             console.log(error);
           });
       },
-      getMateriel() {
-        axios.get('http://rap2api.taobao.org/app/mock/121282/getMateriel')
-          .then((response) => {
-            this.materielList = response.data.data;
-            // this.$nextTick(() => {
-            //   if (!this.filterScroll) {
-            //     this.filterScroll = new BScroll(this.$refs.filterPanel, {
-            //       click: true
-            //     })
-            //   } else {
-            //     this.filterScroll.refresh()
-            //   }
-            // })
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
-      },
+      // getMateriel() {
+      //   axios.get('http://rap2api.taobao.org/app/mock/121282/getMateriel')
+      //     .then((response) => {
+      //       this.materielList = response.data.data;
+      //     })
+      //     .catch(function (error) {
+      //       console.log(error);
+      //     });
+      // },
       getOrganization() {
         axios.get('http://rap2api.taobao.org/app/mock/121282/getOrganization')
           .then((response) => {
-            this.organizationList = response.data.data;
-            // this.$nextTick(() => {
-            //   if (!this.filterScroll) {
-            //     this.filterScroll = new BScroll(this.$refs.filterPanel, {
-            //       click: true
-            //     })
-            //   } else {
-            //     this.filterScroll.refresh()
-            //   }
-            // })
+            this.organizationList = response.data.data
           })
           .catch(function (error) {
             console.log(error);
@@ -251,14 +234,14 @@
         if (item.active) {
           Vue.set(item, 'active', false);//为item添加不存在的属性，需要使用vue提供的Vue.set( object, key, value )方法。
           if (item.materiel) {
-            this.$remove(this.chosenMaterielList, item.materielId)
+            //this.$remove(this.chosenMaterielList, item.materielId)
           } else if (item.organization) {
             this.$remove(this.chosenOrganizationList, item.organizationId)
           }
         } else {
           Vue.set(item, 'active', true);
           if (item.materiel) {
-            this.chosenMaterielList.push(item.materielId)
+            //this.chosenMaterielList.push(item.materielId)
           } else if (item.organization) {
             this.chosenOrganizationList.push(item.organizationId)
           }
@@ -273,7 +256,7 @@
       },
       doSearch() {
         this.list.length = 0
-        this.loadData(1, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResult)
+        this.loadData(1, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResultId)
         // this.chosenMaterielList
         // this.chosenOrganizationList
         // this.searchResult
@@ -313,7 +296,7 @@
         clearTimeout(this.timer)
         this.timer = setTimeout(() => {
           if (e.target.value !== '') {
-            axios.get('http://rap2api.taobao.org/app/mock/121282/search', {
+            axios.get('http://rap2api.taobao.org/app/mock/121282/getSupplier', {
               params: {
                 keyword: e.target.value
               }
@@ -330,8 +313,6 @@
           }
         }, 300)
         //this.selectedResult = e != null ? e.target.value : keyword
-
-
       },
       hiddenSearch() {
         this.searchStatus = true
@@ -341,15 +322,16 @@
         this.showResult = true
         //this.search(null,this.selectedResult)
       },
-      resultToSearchBar(e) {
+      resultToSearchBar(e,id) {
         console.log(e.target.textContent)
+        this.selectedResultId = id
         this.selectedResult = e.target.textContent
         this.hiddenSearch()
         this.searchResult = []
       },
       getDate(e) {
         this.date = e.target.value
-        this.loadData(1, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResult)
+        this.loadData(1, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResultId)
       },
       toggleMaterialUpDown(dom) {
         let wrap = dom
@@ -486,10 +468,12 @@
       resetOptions(){
         this.chosenMaterielList = []
         this.chosenOrganizationList = []
+      },
+      receiveChildData(data){
+        this.chosenMaterielList = data
       }
     },
     mounted() {
-      this.getMateriel()
       this.getOrganization()
       this.viewHeight = window.innerHeight
     },
@@ -497,35 +481,35 @@
 
       next((vm) => {
         //console.log(vm.chosenMaterielList, vm.chosenOrganizationList, vm.date, vm.selectedResult)
-        vm.loadData(1, 10, vm.chosenMaterielList, vm.chosenOrganizationList, vm.date, vm.selectedResult)
+        vm.loadData(1, 10, vm.chosenMaterielList, vm.chosenOrganizationList, vm.date, vm.selectedResultId)
 
       })
     },
     watch: {
       //数据只会在mounted中改变一次，所以这里监听的是数据初始化
-      materielList: function () {
-        //我们要获取的页面上元素的高度，但这个元素所在的父容器是v-show:false状态，所以这里要使用一个非常规方法
-        //将这个父容器在页面上渲染出来，紧接着让它不可见，这个时候就可以获取到数据并切用户还看不到，后面获取完数据后会把它改回成初始状态
-        console.log('change mater')
-        if (!this.showFilter) {
-          this.showFilter = true
-          this.$refs.filterPanel.style.visibility = 'hidden'
-
-          //必须在this.$nextTick中才能获取到数据，
-          this.$nextTick(() => {
-            //html中要用到这个dom
-            this.materialOptions = this.$refs.materialOptions
-
-            //获取元素的真实高度
-            this.getMaterialHeight(this.$refs.materialOptions)
-
-            // 将该组件改回初始状态
-            this.showFilter = false
-            this.$refs.filterPanel.style.visibility = 'visible'
-          })
-        }
-
-      },
+      // materielList: function () {
+      //   //我们要获取的页面上元素的高度，但这个元素所在的父容器是v-show:false状态，所以这里要使用一个非常规方法
+      //   //将这个父容器在页面上渲染出来，紧接着让它不可见，这个时候就可以获取到数据并切用户还看不到，后面获取完数据后会把它改回成初始状态
+      //   console.log('change mater')
+      //   if (!this.showFilter) {
+      //     this.showFilter = true
+      //     this.$refs.filterPanel.style.visibility = 'hidden'
+      //
+      //     //必须在this.$nextTick中才能获取到数据，
+      //     this.$nextTick(() => {
+      //       //html中要用到这个dom
+      //       this.materialOptions = this.$refs.materialOptions
+      //
+      //       //获取元素的真实高度
+      //       this.getMaterialHeight(this.$refs.materialOptions)
+      //
+      //       // 将该组件改回初始状态
+      //       this.showFilter = false
+      //       this.$refs.filterPanel.style.visibility = 'visible'
+      //     })
+      //   }
+      //
+      // },
       organizationList() {
         if (!this.showFilter) {
           this.showFilter = true
@@ -1138,6 +1122,7 @@
 
   .search-wrap .result-wrap .result li {
     padding: 0.14rem 0;
+    position: relative;
     font-size: 0.12rem;
     color: #929292;
     /*border-bottom: 1px solid #efefef;*/
