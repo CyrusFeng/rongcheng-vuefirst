@@ -137,7 +137,7 @@
         console.log('beforeRouteEnter')
         vm.id = vm.$route.params.id
         vm.serialNum = vm.$route.params.serialNum
-        axios.get('http://rap2api.taobao.org/app/mock/121282/getDetail', {
+        axios.get('getPO.main', {
           params: {
             id: vm.id,
             serialNum: vm.serialNum
@@ -173,9 +173,10 @@
     methods: {
       save() {
         //this.showLoadingImg = true
-        axios.get('http://rap2api.taobao.org/app/mock/121282/updateDetail', {
+        axios.get('updatePO.main', {
           params: {
             id: this.id,
+            serialNum: this.serialNum,
             status: this.status,
             orderQuantity: this.orderQuantity
           }

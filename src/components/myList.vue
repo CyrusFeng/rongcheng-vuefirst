@@ -20,19 +20,6 @@
     <div class="filter-panel" v-show="showFilter" ref="filterPanel">
       <div class="filter-wrap" @click.stop ref="filterWrap"  @click="changeShowFilter">
         <div class="filter-tab" @click.stop>
-          <!--<div class="material title">-->
-            <!--<div>-->
-              <!--<span class="item">物料</span>-->
-            <!--</div>-->
-            <!--<div>-->
-              <!--<span class="title-right">全部物料</span>-->
-              <!--<i :class="materialExpand?'up-icon':''" @click="toggleMaterialUpDown(materialOptions)"></i>-->
-            <!--</div>-->
-          <!--</div>-->
-          <!--<div class="material-options options" ref="materialOptions">-->
-            <!--<span class="item" :class="{'active':isInArray(chosenMaterielList,item.materielId)}" @click="toggle(item)"-->
-                  <!--v-for="(item,index) in materielList" :key="index">{{item.materiel}}</span>-->
-          <!--</div>-->
 
           <MaterielSearch @listenToChildEvent="receiveChildData"></MaterielSearch>
 
@@ -168,15 +155,11 @@
         filterWrap: 0,
       }
     },
-    // computed:{
-    //   value(){
-    //     return this.selectedResult
-    //   }
-    // },
     methods: {
       loadData(page, pageAmount, materiel, organization, date, supplier) {
         this.showLoadingImg = true
-        axios.get('http://rap2api.taobao.org/app/mock/121282/getList', {
+        axios.get('111.160.97.27:9000/EASSupport/test.main/getPOList.main', {
+        // axios.get('getPOList.main', {
           params: {
             page: page,
             pageAmount: pageAmount,
@@ -212,17 +195,9 @@
             console.log(error);
           });
       },
-      // getMateriel() {
-      //   axios.get('http://rap2api.taobao.org/app/mock/121282/getMateriel')
-      //     .then((response) => {
-      //       this.materielList = response.data.data;
-      //     })
-      //     .catch(function (error) {
-      //       console.log(error);
-      //     });
-      // },
       getOrganization() {
-        axios.get('http://rap2api.taobao.org/app/mock/121282/getOrganization')
+        axios.get('111.160.97.27:9000/EASSupport/test.main/getOrganization.main')
+        // axios.get('getOrganization.main')
           .then((response) => {
             this.organizationList = response.data.data
           })
@@ -234,42 +209,27 @@
         if (item.active) {
           Vue.set(item, 'active', false);//为item添加不存在的属性，需要使用vue提供的Vue.set( object, key, value )方法。
           if (item.materiel) {
-            //this.$remove(this.chosenMaterielList, item.materielId)
           } else if (item.organization) {
             this.$remove(this.chosenOrganizationList, item.organizationId)
           }
         } else {
           Vue.set(item, 'active', true);
           if (item.materiel) {
-            //this.chosenMaterielList.push(item.materielId)
           } else if (item.organization) {
             this.chosenOrganizationList.push(item.organizationId)
           }
         }
-
-        // if (item.materiel) {
-        //   this.chosenMaterielList.push(item.materiel)
-        // }else{
-        //   this.chosenOrganizationList.push(item.organization)
-        // }
-
       },
       doSearch() {
         this.list.length = 0
         this.loadData(1, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResultId)
-        // this.chosenMaterielList
-        // this.chosenOrganizationList
-        // this.searchResult
       },
       controlLength(str, len) {
         return str.length > 6 ? str.slice(0, len) + '...' : str
       },
       isInArray(arr, value) {
         for (let i = 0; i < arr.length; i++) {
-          // console.log('arr:'+arr[i])
-          // console.log('value:'+value)
           if (value === arr[i]) {
-            console.log('InArray-----------------')
             return true;
           }
         }
@@ -296,7 +256,7 @@
         clearTimeout(this.timer)
         this.timer = setTimeout(() => {
           if (e.target.value !== '') {
-            axios.get('http://rap2api.taobao.org/app/mock/121282/getSupplier', {
+            axios.get('getSupplier.main', {
               params: {
                 keyword: e.target.value
               }
@@ -486,30 +446,6 @@
       })
     },
     watch: {
-      //数据只会在mounted中改变一次，所以这里监听的是数据初始化
-      // materielList: function () {
-      //   //我们要获取的页面上元素的高度，但这个元素所在的父容器是v-show:false状态，所以这里要使用一个非常规方法
-      //   //将这个父容器在页面上渲染出来，紧接着让它不可见，这个时候就可以获取到数据并切用户还看不到，后面获取完数据后会把它改回成初始状态
-      //   console.log('change mater')
-      //   if (!this.showFilter) {
-      //     this.showFilter = true
-      //     this.$refs.filterPanel.style.visibility = 'hidden'
-      //
-      //     //必须在this.$nextTick中才能获取到数据，
-      //     this.$nextTick(() => {
-      //       //html中要用到这个dom
-      //       this.materialOptions = this.$refs.materialOptions
-      //
-      //       //获取元素的真实高度
-      //       this.getMaterialHeight(this.$refs.materialOptions)
-      //
-      //       // 将该组件改回初始状态
-      //       this.showFilter = false
-      //       this.$refs.filterPanel.style.visibility = 'visible'
-      //     })
-      //   }
-      //
-      // },
       organizationList() {
         if (!this.showFilter) {
           this.showFilter = true
@@ -529,18 +465,6 @@
           })
         }
       },
-      materielWrapHeight() {
-        // this.filterScroll.refresh()
-        // this.filterWrap = this.materielWrapHeight + this.organizationWrapHeight
-        // console.log('refresh')
-      },
-      organizationWrapHeight() {
-        // this.filterScroll.refresh()
-        // this.filterWrap = this.materielWrapHeight + this.organizationWrapHeight
-      },
-      filterWrap() {
-        // this.filterScroll.refresh()
-      }
     }
   }
 </script>

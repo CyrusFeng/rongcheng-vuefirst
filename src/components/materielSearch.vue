@@ -6,7 +6,7 @@
         <label for="search1" class="showName" v-show="!labelStatus">请输入供应商名称</label>
         <input type="text" id="search1" @input="search($event)" :value="selectedResult">
       </div>
-      <span class="cancelBtn" @click="hiddenSearch">取消</span>
+      <span class="cancelBtn" @click="clearSearchResult">取消</span>
     </div>
     <div class="result-wrap" @click.stop="" v-show="showResult">
       <ul class="result">
@@ -31,9 +31,9 @@
       }
     },
     methods:{
-      changeShowSearch() {
-        this.searchStatus = !this.searchStatus
-      },
+      // changeShowSearch() {
+      //   this.searchStatus = !this.searchStatus
+      // },
       search(e) {
         this.selectedResult = e.target.value
         this.labelHidden(e)
@@ -42,7 +42,7 @@
         clearTimeout(this.timer)
         this.timer = setTimeout(() => {
           if (e.target.value !== '') {
-            axios.get('http://rap2api.taobao.org/app/mock/121282/getMateriel', {
+            axios.get('getMateriel.main', {
               params: {
                 keyword: e.target.value
               }
@@ -68,15 +68,18 @@
         }
       },
       resultToSearchBar(e,id) {
-        console.log(e.target.textContent)
         this.selectedResult = e.target.textContent
         this.$emit('listenToChildEvent',id)
         this.hiddenSearch()
         this.searchResult = []
       },
-      hiddenSearch() {
-        this.searchStatus = true
-      },
+      // hiddenSearch() {
+      //   this.searchStatus = true
+      // },
+      clearSearchResult(){
+        this.$emit('listenToChildEvent','')
+        this.selectedResult = ''
+      }
     }
   }
 </script>
