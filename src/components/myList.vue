@@ -18,7 +18,7 @@
     </header>
 
     <div class="filter-panel" v-show="showFilter" ref="filterPanel">
-      <div class="filter-wrap" @click.stop ref="filterWrap"  @click="changeShowFilter">
+      <div class="filter-wrap" @click.stop ref="filterWrap" @click="changeShowFilter">
         <div class="filter-tab" @click.stop>
 
           <MaterielSearch @listenToChildEvent="receiveChildData"></MaterielSearch>
@@ -54,7 +54,7 @@
         </div>
         <span class="cancelBtn" @click="hiddenSearch">取消</span>
       </div>
-      <div class="result-wrap" @click.stop="" v-show="showResult">
+      <div class="result-wrap" @click.stop="" v-show="showResult" ref="resultWrap">
         <ul class="result">
           <li v-for="item in searchResult" @click="resultToSearchBar($event,item.supplierId)">{{item.supplierName}}</li>
         </ul>
@@ -117,7 +117,7 @@
   let json = {}
   export default {
     name: "myList",
-    components:{
+    components: {
       MaterielSearch
     },
     data() {
@@ -126,10 +126,11 @@
         page: 1,
         list: [],
         scroll: null,
+        supplierScroll: null,
         filterScroll: null,
         showFilter: false,
-        materialExpand:false,
-        organizationExpand:false,
+        materialExpand: false,
+        organizationExpand: false,
         labelStatus: false,
         searchStatus: true,
         searchResult: [],
@@ -158,8 +159,7 @@
     methods: {
       loadData(page, pageAmount, materiel, organization, date, supplier) {
         this.showLoadingImg = true
-        axios.get('111.160.97.27:9000/EASSupport/test.main/getPOList.main', {
-        // axios.get('getPOList.main', {
+        axios.get('getPOList.main', {
           params: {
             page: page,
             pageAmount: pageAmount,
@@ -196,8 +196,7 @@
           });
       },
       getOrganization() {
-        axios.get('111.160.97.27:9000/EASSupport/test.main/getOrganization.main')
-        // axios.get('getOrganization.main')
+        axios.get('getOrganization.main')
           .then((response) => {
             this.organizationList = response.data.data
           })
@@ -263,6 +262,15 @@
             })
               .then((response) => {
                 this.searchResult = response.data.data;
+                this.$nextTick(() => {
+                  if (!this.supplierScroll) {
+                    this.supplierScroll = new BScroll(this.$refs.resultWrap, {
+                      click: true,
+                    })
+                  } else {
+                    this.supplierScroll.refresh()
+                  }
+                })
               })
               .catch(function (error) {
                 console.log(error);
@@ -270,6 +278,7 @@
           } else {
             this.showResult = false
             this.searchResult = []
+            this.selectedResultId = ''
           }
         }, 300)
         //this.selectedResult = e != null ? e.target.value : keyword
@@ -282,7 +291,7 @@
         this.showResult = true
         //this.search(null,this.selectedResult)
       },
-      resultToSearchBar(e,id) {
+      resultToSearchBar(e, id) {
         console.log(e.target.textContent)
         this.selectedResultId = id
         this.selectedResult = e.target.textContent
@@ -425,11 +434,11 @@
       blur() {
         this.$refs.searchWrap.style.height = '100%'
       },
-      resetOptions(){
+      resetOptions() {
         this.chosenMaterielList = []
         this.chosenOrganizationList = []
       },
-      receiveChildData(data){
+      receiveChildData(data) {
         this.chosenMaterielList = data
       }
     },
@@ -440,9 +449,8 @@
     beforeRouteEnter(to, from, next) {
 
       next((vm) => {
-        //console.log(vm.chosenMaterielList, vm.chosenOrganizationList, vm.date, vm.selectedResult)
+        vm.list = []//请求数据前先清空当前数据，防止数据叠加
         vm.loadData(1, 10, vm.chosenMaterielList, vm.chosenOrganizationList, vm.date, vm.selectedResultId)
-
       })
     },
     watch: {
@@ -812,7 +820,7 @@
     height: calc(100% - 0.46rem);
     background-color: rgba(0, 0, 0, 0.3);
     /*overflow: scroll;*/
-    -webkit-overflow-scrolling:touch;
+    -webkit-overflow-scrolling: touch;
     /*overflow-y: scroll*/
     /*overflow: hidden;*/
   }
@@ -821,7 +829,7 @@
     height: calc(100% + 1px);
   }
 
-  .filter-panel .filter-wrap .filter-tab{
+  .filter-panel .filter-wrap .filter-tab {
     background-color: #fff;
   }
 
@@ -877,9 +885,10 @@
     background-size: contain;
     transition: all 0.3s;
   }
+
   /*.filter-panel .filter-wrap .filter-tab .title i.right-icon {*/
-    /*transform: rotate(90deg);*/
-    /*transition: all 0.3s;*/
+  /*transform: rotate(90deg);*/
+  /*transition: all 0.3s;*/
   /*}*/
   .filter-panel .filter-wrap .filter-tab .title i.up-icon {
     transform: rotate(-90deg);
@@ -1042,6 +1051,8 @@
 
   .search-wrap .result-wrap {
     margin-left: 0.12rem;
+    height: calc(100% - 0.58rem);
+    overflow: hidden;
   }
 
   .search-wrap .result-wrap .result li {

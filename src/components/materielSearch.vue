@@ -3,7 +3,7 @@
     <div class="search-bar-wrap" @click.stop="">
       <div class="search-bar">
         <i class="search-icon"></i>
-        <label for="search1" class="showName" v-show="!labelStatus">请输入供应商名称</label>
+        <label for="search1" class="showName" v-show="!labelStatus">请输入物料名称</label>
         <input type="text" id="search1" @input="search($event)" :value="selectedResult">
       </div>
       <span class="cancelBtn" @click="clearSearchResult">取消</span>
@@ -73,9 +73,9 @@
         this.hiddenSearch()
         this.searchResult = []
       },
-      // hiddenSearch() {
-      //   this.searchStatus = true
-      // },
+      hiddenSearch() {
+        this.showResult = false;
+      },
       clearSearchResult(){
         this.$emit('listenToChildEvent','')
         this.selectedResult = ''
