@@ -6,7 +6,7 @@
         <label for="search1" class="showName" v-show="!labelStatus">请输入物料名称</label>
         <input type="text" id="search1" @input="search($event)" :value="selectedResult">
       </div>
-      <span class="cancelBtn" @click="clearSearchResult">取消</span>
+      <span class="cancelBtn" @click="clearSearchResult">清空</span>
     </div>
     <div class="result-wrap" @click.stop="" v-show="showResult">
       <ul class="result">
@@ -57,6 +57,8 @@
           } else {
             this.showResult = false
             this.searchResult = []
+            this.selectedResult = ''
+            this.$emit('listenToChildEvent','')
           }
         }, 300)
         //this.selectedResult = e != null ? e.target.value : keyword

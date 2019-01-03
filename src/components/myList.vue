@@ -96,9 +96,14 @@
 
           </li>
         </ul>
-        <div class="loading-wrapper">
+        <div class="loading-wrapper" v-show="showLoadingImg">
           <p class="line"></p>
           <img src="../assets/loading-bottom.gif" alt="">
+          <p class="line"></p>
+        </div>
+        <div class="loading-wrapper" v-show="showLoadingWord">
+          <p class="line"></p>
+          <span>暂无数据</span>
           <p class="line"></p>
         </div>
       </div>
@@ -123,6 +128,7 @@
     data() {
       return {
         showLoadingImg: false,
+        showLoadingWord: false,
         page: 1,
         list: [],
         scroll: null,
@@ -170,30 +176,40 @@
           }
         })
           .then((response) => {
-            this.showLoadingImg = false
-            this.page++
-            this.list = response.data.data.concat(this.list);
-            this.$nextTick(() => {
-              if (!this.scroll) {
-                this.scroll = new BScroll(this.$refs.wrapper, {
-                  click: true,
-                  pullUpLoad: {
-                    threshold: -50 // 当上拉距离超过30px时触发 pullingUp 事件
-                  }
-                })
-                this.scroll.on('pullingUp', () => {
-                  this.loadData(this.page, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResultId)
-                  this.scroll.finishPullUp()
-                  // 事情做完，需要调用此方法告诉 better-scroll 数据已加载，否则上拉事件只会执行一次
-                })
-              } else {
-                this.scroll.refresh()
-              }
-            })
+            if (response.data.data.length > 0) {
+              this.showLoadingImg = false
+              this.showLoadingWord = false
+              this.page++
+              this.list = response.data.data.concat(this.list);
+              this.$nextTick(() => {
+                if (!this.scroll) {
+                  this.scroll = new BScroll(this.$refs.wrapper, {
+                    click: true,
+                    pullUpLoad: {
+                      threshold: -50 // 当上拉距离超过30px时触发 pullingUp 事件
+                    }
+                  })
+                  this.scroll.on('pullingUp', () => {
+                    this.loadData(this.page, 10, this.chosenMaterielList, this.chosenOrganizationList, this.date, this.selectedResultId)
+                    this.scroll.finishPullUp()
+                    // 事情做完，需要调用此方法告诉 better-scroll 数据已加载，否则上拉事件只会执行一次
+                  })
+                } else {
+                  this.scroll.refresh()
+                }
+              })
+            } else {
+              this.showLoadingImg = false
+              this.showLoadingWord = true;
+            }
+
           })
-          .catch(function (error) {
-            console.log(error);
-          });
+          .catch((error) => {
+            this.showLoadingImg = false
+            this.showLoadingWord = true
+          }).finally(() => {
+          this.showLoadingImg = false
+        })
       },
       getOrganization() {
         axios.get('getOrganization.main')
@@ -784,7 +800,7 @@
     content: "  ";
     position: absolute;
     left: 0;
-    bottom: 0;
+    bottom: -0.02rem;
     width: 100%;
     height: 0px;
     background-color: #cacaca;
@@ -808,6 +824,12 @@
     margin: 0 0.08rem;
     width: 0.25rem;
     height: 0.25rem;
+  }
+
+  .list-wrap .loading-wrapper span {
+    margin: 0 0.08rem;
+    font-size: 0.09rem;
+    color: #999999;
   }
 
   .filter-panel {
